@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🏰 中世纪王朝 · 交易分析器</title>
+  <link rel="stylesheet" href="/src/styles/style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- 整个应用界面，直接从之前单文件版本中搬过来 -->
+    <div class="app">
+      <h1>
+        🏰 中世纪王朝 · 交易分析器
+        <small>分类 · 筛选 · 原材料详情</small>
+      </h1>
+
+      <!-- 弹窗 -->
+      <div class="modal-overlay" id="itemModal">
+        <div class="modal-box">
+          <h3 id="modalTitle">物品详情</h3>
+          <p><strong>名称：</strong><span id="modalName"></span></p>
+          <p><strong>分类：</strong><span id="modalCategory"></span></p>
+          <p><strong>基础价：</strong><span id="modalPrice"></span></p>
+          <button class="close-btn" id="modalCloseBtn">关闭</button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- 左侧：物品库 -->
+        <div class="card">
+          <h2>
+            📦 物品价格库
+            <span id="itemCount">0</span>
+          </h2>
+          <div class="form-row">
+            <label>名称</label>
+            <input type="text" id="itemNameInput" placeholder="例: 铁矿石" />
+            <label>基础价</label>
+            <input type="number" id="itemPriceInput" placeholder="17" step="0.1" />
+          </div>
+          <div class="form-row">
+            <label>分类</label>
+            <input type="text" id="itemCategoryInput" placeholder="如: 采矿, 锻造" />
+            <button class="btn btn-sm" id="addItemBtn">➕ 添加</button>
+          </div>
+
+          <div class="filter-row">
+            <label style="min-width:50px;">筛选</label>
+            <select id="itemCategoryFilter">
+              <option value="">所有分类</option>
+            </select>
+            <span class="text-muted" style="font-size:0.8rem; margin-left:auto;">点击分类名可筛选</span>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>物品</th><th>分类</th><th>基础价</th><th style="text-align:right">操作</th></tr>
+              </thead>
+              <tbody id="itemTableBody">
+                <tr><td colspan="4" class="empty-state">还没有物品，添加一些吧</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="flex-between mt-2">
+            <span class="text-muted" style="font-size:0.8rem;">💡 点击分类标签可快速筛选</span>
+            <button class="btn btn-sm btn-danger" id="clearItemsBtn">🗑️ 清空全部</button>
+          </div>
+        </div>
+
+        <!-- 右侧：配方 & 利润分析 -->
+        <div class="card">
+          <h2>
+            ⚙️ 配方 & 利润分析
+            <span id="recipeCount">0</span>
+          </h2>
+          <div class="form-row">
+            <label>成品</label>
+            <input type="text" id="productNameInput" placeholder="黑色染料" />
+          </div>
+          <div class="form-row">
+            <label>材料</label>
+            <input type="text" id="ingredientInput" placeholder="云杉树皮 x40, 铁矿石 x3, 陶碗 x1" />
+          </div>
+          <div class="form-row">
+            <label>售价</label>
+            <input type="number" id="sellPriceInput" placeholder="150" step="0.1" />
+            <button class="btn btn-sm" id="addRecipeBtn">🧪 添加配方</button>
+          </div>
+
+          <div class="filter-row">
+            <label style="min-width:50px;">筛选</label>
+            <select id="recipeCategoryFilter">
+              <option value="">所有分类</option>
+            </select>
+            <span class="text-muted" style="font-size:0.8rem; margin-left:auto;">按成品分类筛选</span>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>成品</th><th>材料（点击查看价格）</th><th>成本</th><th>售价</th><th>利润</th><th style="text-align:right">操作</th></tr>
+              </thead>
+              <tbody id="recipeTableBody">
+                <tr><td colspan="6" class="empty-state">暂无配方，添加一个试试</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="flex-between mt-2">
+            <span class="text-muted" style="font-size:0.8rem;">📊 点击材料名称查看基础价格</span>
+            <button class="btn btn-sm btn-danger" id="clearRecipesBtn">🗑️ 清空配方</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-tip">
+        💾 数据自动保存在浏览器本地 · 分类可自由定义 · 点击原材料查看详情
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

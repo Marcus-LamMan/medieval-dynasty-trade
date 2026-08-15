@@ -1,0 +1,13 @@
+# 依赖目录
+node_modules/
+
+# 构建产物
+dist/
+.vite/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log
