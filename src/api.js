@@ -57,3 +57,16 @@ export async function deleteRecipe(id) {
     }
     return res.json();
 }
+
+export async function updateItem(id, data) {
+    const res = await fetch(`${API_BASE}/items/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || '更新物品失败');
+    }
+    return res.json();
+}

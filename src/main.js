@@ -2,6 +2,7 @@ import './styles/style.css';
 import { fetchItems, fetchRecipes, addItem, deleteItem, addRecipe, deleteRecipe } from './api.js';
 import { renderItems, setupItemHandlers, setupClearItems } from './components/items.js';
 import { renderRecipes, setupRecipeHandlers, setupClearRecipes } from './components/recipes.js';
+import { updateItem } from './api.js';
 
 let items = [];
 let recipes = [];
@@ -100,8 +101,13 @@ async function handleClearRecipes() {
     }
     await loadAllData();
 }
+async function handleUpdateItem(id, data) {
+    await updateItem(id, data);
+    await loadAllData(); // 刷新列表
+}
 
-setupItemHandlers(handleAddItem, handleDeleteItem);
+
+setupItemHandlers(handleAddItem, handleDeleteItem, handleUpdateItem);
 setupClearItems(handleClearItems);
 setupRecipeHandlers(handleAddRecipe, handleDeleteRecipe);
 setupClearRecipes(handleClearRecipes);

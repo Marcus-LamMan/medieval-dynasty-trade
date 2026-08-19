@@ -120,6 +120,70 @@ app.delete('/api/items/:id', (req, res) => {
     }
 });
 
+app.put('/api/items/:id', (req, res) => {
+    const id = req.params.id;
+    const { name, category, base_price, weight, max_stack, notes } = req.body;
+    // 至少需要提供可更新的字段，但名称和价格必须有其一
+    if (!name && base_price === undefined) {
+        return res.status(400).json({ error: '请提供需要更新的字段（名称或价格）' });
+    }
+    try {
+        // 先检查物品是否存在
+        const checkStmt = db.prepare('SELECT id FROM items WHERE id = ?');
+        const existing = checkStmt.get(id);
+        if (!existing) {
+            return res.status(404).json({ error: '物品不存在' });
+        }
+
+        // 构建动态 SQL（只更新提供的字段）
+        const fields = [];
+        const values = [];
+        if (name) {
+            fields.push('name = ?');
+            values.push(name);
+        }
+        if (category !== undefined) {
+            fields.push('category = ?');
+            values.push(category);
+        }
+        if (base_price !== undefined) {
+            fields.push('base_price = ?');
+            values.push(base_price);
+        }
+        if (weight !== undefined) {
+            fields.push('weight = ?');
+            values.push(weight);
+        }
+        if (max_stack !== undefined) {
+            fields.push('max_stack = ?');
+            values.push(max_stack);
+        }
+        if (notes !== undefined) {
+            fields.push('notes = ?');
+            values.push(notes);
+        }
+        // 更新时间
+        fields.push('updated_at = CURRENT_TIMESTAMP');
+        values.push(id);
+
+        const sql = `UPDATE items SET ${fields.join(', ')} WHERE id = ?`;
+        const stmt = db.prepare(sql);
+        stmt.run(...values);
+
+        // 返回更新后的物品
+        const getStmt = db.prepare('SELECT * FROM items WHERE id = ?');
+        const updated = getStmt.get(id);
+        res.json(updated);
+    } catch (err) {
+        if (err.message.includes('UNIQUE constraint failed')) {
+            res.status(409).json({ error: '物品名称已存在' });
+        } else {
+            console.error(err);
+            res.status(500).json({ error: '服务器错误' });
+        }
+    }
+});
+
 function parseIngredientsString(str) {
     if (!str) return [];
     const parts = str.split(',').map(s => s.trim()).filter(s => s.length > 0);
@@ -211,3 +275,4 @@ app.delete('/api/recipes/:id', (req, res) => {
 app.listen(port, () => {
     console.log(`🚀 Server running at http://localhost:${port}`);
 });
+
