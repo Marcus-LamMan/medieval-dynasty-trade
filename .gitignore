@@ -11,3 +11,6 @@ Thumbs.db
 
 # 日志
 *.log
+
+# SQLite 数据库文件（不要提交实际数据）
+server/database.db

@@ -3,6 +3,7 @@ import { escapeHtml } from '../utils/helpers.js';
 let currentRecipes = [];
 let currentItems = [];
 let currentFilter = '';
+let currentCoefficient = 1.0;
 
 export function renderRecipes(recipes, items, filterValue = '') {
     currentRecipes = recipes;
@@ -10,6 +11,11 @@ export function renderRecipes(recipes, items, filterValue = '') {
     currentFilter = filterValue.toLowerCase();
     const tbody = document.getElementById('recipeTableBody');
     const countSpan = document.getElementById('recipeCount');
+
+    const coeffSelect = document.getElementById('skillLevelSelect');
+    if (coeffSelect) {
+        currentCoefficient = parseFloat(coeffSelect.value) || 1.0;
+    }
 
     let filtered = currentFilter ? recipes.filter(r => {
         const found = items.find(it => it.name.trim().toLowerCase() === r.product_name?.toLowerCase());
@@ -25,34 +31,37 @@ export function renderRecipes(recipes, items, filterValue = '') {
     let html = '';
     for (let i = 0; i < recipes.length; i++) {
         const r = recipes[i];
-        // 应用筛选（成品分类）
         if (currentFilter) {
             const found = items.find(it => it.name.trim().toLowerCase() === r.product_name?.toLowerCase());
             if (!found || !found.category || found.category.toLowerCase() !== currentFilter) continue;
         }
-        // 使用后端返回的材料和利润
-        const ingList = r.materials || [];
+        const materials = r.materials || [];
         const total = r.total_cost || 0;
-        const profit = r.profit || 0;
+        const basePrice = r.product_price || 0;
+        const finalPrice = basePrice * currentCoefficient;
+        const profit = finalPrice - total;
         const profitStr = profit >= 0 ? `+${profit.toFixed(2)}` : profit.toFixed(2);
         const badgeClass = profit >= 0 ? 'badge-profit' : 'badge-loss';
 
-        let ingDisplay = '';
-        if (ingList.length === 0) {
-            ingDisplay = '<span class="text-muted">(无材料)</span>';
+        // 生成材料显示文本
+        let ingredientsDisplay = '';
+        if (materials.length === 0) {
+            ingredientsDisplay = '(无材料)';
         } else {
-            ingDisplay = ingList.map(mat => {
-                const name = escapeHtml(mat.material_name);
-                const qty = mat.quantity;
-                return `<span class="ingredient-click" data-ingredient="${escapeHtml(mat.material_name)}">${name} ×${qty}</span>`;
-            }).join(' ');
+            ingredientsDisplay = materials.map(mat =>
+                `${escapeHtml(mat.material_name)} ×${mat.quantity}`
+            ).join(', ');
         }
+        // 存储材料 JSON 用于点击弹窗
+        const materialsJson = JSON.stringify(materials);
 
         html += `<tr>
             <td class="item-name">${escapeHtml(r.product_name || '未知成品')}</td>
-            <td class="recipe-ingredients">${ingDisplay}</td>
+            <td class="recipe-ingredients" style="cursor:pointer;" data-materials='${escapeHtml(materialsJson)}'>
+                ${escapeHtml(ingredientsDisplay)}
+            </td>
             <td>${total.toFixed(2)}</td>
-            <td>${Number(r.product_price || 0).toFixed(2)}</td>
+            <td>${finalPrice.toFixed(2)}</td>
             <td><span class="${badgeClass}">${profitStr}</span></td>
             <td style="text-align:right">
                 <button class="btn btn-sm btn-danger delete-recipe" data-id="${r.id}">✕</button>
@@ -72,44 +81,48 @@ export function renderRecipes(recipes, items, filterValue = '') {
         });
     });
 
-    // 材料点击 -> 弹窗
-    tbody.querySelectorAll('.ingredient-click').forEach(el => {
-        el.addEventListener('click', function() {
-            const ingName = this.getAttribute('data-ingredient');
-            if (ingName) {
-                showItemDetail(ingName, items);
+    // 点击材料列显示详情
+    tbody.querySelectorAll('.recipe-ingredients').forEach(cell => {
+        cell.addEventListener('click', function() {
+            const materialsJson = this.getAttribute('data-materials');
+            if (materialsJson) {
+                try {
+                    const materials = JSON.parse(materialsJson);
+                    showMaterialsDetail(materials);
+                } catch (e) {
+                    alert('材料数据解析失败');
+                }
             }
         });
     });
 }
 
-function showItemDetail(name, items) {
-    const found = items.find(it => it.name.trim().toLowerCase() === name.trim().toLowerCase());
-    if (!found) {
-        alert(`未找到物品 "${name}"，请先在物品库中添加。`);
+function showMaterialsDetail(materials) {
+    if (!materials || materials.length === 0) {
+        alert('该配方没有材料');
         return;
     }
-    document.getElementById('modalName').textContent = found.name;
-    document.getElementById('modalCategory').textContent = found.category || '未分类';
-    document.getElementById('modalPrice').textContent = found.base_price?.toFixed(2) || '0.00';
-    document.getElementById('itemModal').classList.add('active');
+    let msg = '材料列表：\n';
+    for (const mat of materials) {
+        const price = mat.material_price !== undefined ? mat.material_price : '未知';
+        msg += `${mat.material_name} ×${mat.quantity}  单价: ${price}\n`;
+    }
+    alert(msg);
 }
 
+// ---------- 添加配方 ----------
 export function setupRecipeHandlers(onAddRecipe, onDeleteRecipe) {
     window.onDeleteRecipe = onDeleteRecipe;
 
     const addBtn = document.getElementById('addRecipeBtn');
     const productInput = document.getElementById('productNameInput');
     const ingredientInput = document.getElementById('ingredientInput');
-    const sellPriceInput = document.getElementById('sellPriceInput');
 
     async function handleAdd() {
         const productName = productInput.value.trim();
         const ingredientsString = ingredientInput.value.trim();
-        const sellPrice = parseFloat(sellPriceInput.value);
         if (!productName) { alert('请输入成品名称'); return; }
         if (!ingredientsString) { alert('请输入材料清单'); return; }
-        if (isNaN(sellPrice) || sellPrice < 0) { alert('请输入有效售价'); return; }
 
         const buildingName = prompt('请输入生产建筑名称（例如：铁匠铺）', '铁匠铺');
         if (!buildingName) return;
@@ -119,13 +132,11 @@ export function setupRecipeHandlers(onAddRecipe, onDeleteRecipe) {
                 productName,
                 buildingName,
                 ingredientsString,
-                sellPrice,
                 craft_time_seconds: 10,
                 unlock_tech: ''
             });
             productInput.value = '';
             ingredientInput.value = '';
-            sellPriceInput.value = '';
             productInput.focus();
         } catch (err) {
             alert(err.message);
@@ -133,11 +144,12 @@ export function setupRecipeHandlers(onAddRecipe, onDeleteRecipe) {
     }
 
     addBtn.addEventListener('click', handleAdd);
-    [productInput, ingredientInput, sellPriceInput].forEach(inp => {
+    [productInput, ingredientInput].forEach(inp => {
         inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleAdd(); });
     });
 }
 
+// ---------- 清空所有配方 ----------
 export function setupClearRecipes(onClearRecipes) {
     document.getElementById('clearRecipesBtn').addEventListener('click', function() {
         if (confirm('确定要清空所有配方吗？此操作不可撤销！')) {

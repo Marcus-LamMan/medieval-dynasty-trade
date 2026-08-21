@@ -67,6 +67,7 @@ function updateCategoryFilters() {
 
 document.getElementById('itemCategoryFilter').addEventListener('change', refreshAll);
 document.getElementById('recipeCategoryFilter').addEventListener('change', refreshAll);
+document.getElementById('skillLevelSelect').addEventListener('change', refreshAll);
 
 const modal = document.getElementById('itemModal');
 document.getElementById('modalCloseBtn').addEventListener('click', () => modal.classList.remove('active'));
